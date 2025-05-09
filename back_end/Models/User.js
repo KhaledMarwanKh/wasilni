@@ -1,10 +1,12 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-const {
-  emailRegex,
-  phoneRegex,
-  passwordRegex,
-} = require('../services/Validators');
+const validator = require('../services/Validators.js'); // Consolidated validators
+
+// Constants for better maintainability (could move to config/constants.js)
+const USER_ROLES = ['user', 'admin', 'driver'];
+const NAME_MAX_LENGTH = 20;
+const PASSWORD_MIN_LENGTH = 8;
+const BCRYPT_SALT_ROUNDS = 12;
 
 const userSchema = new mongoose.Schema(
   {
@@ -12,7 +14,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Name is required'],
       trim: true,
-      maxlength: [20, 'Name cannot exceed 20 characters'],
+      maxlength: [
+        NAME_MAX_LENGTH,
+        `Name cannot exceed ${NAME_MAX_LENGTH} characters`,
+      ],
     },
     email: {
       type: String,
@@ -21,27 +26,30 @@ const userSchema = new mongoose.Schema(
       trim: true,
       lowercase: true,
       validate: {
-        validator: (email) => emailRegex.test(email),
+        validator: validator.emailRegex,
         message: 'Please provide a valid email address',
       },
     },
     password: {
       type: String,
       required: [true, 'Password is required'],
-      minlength: [8, 'Password must be at least 8 characters'],
+      minlength: [
+        PASSWORD_MIN_LENGTH,
+        `Password must be at least ${PASSWORD_MIN_LENGTH} characters`,
+      ],
       validate: {
-        validator: (password) => passwordRegex.test(password),
+        validator: validator.passwordRegex,
         message:
           'Password must contain at least 1 uppercase letter and 1 number',
       },
-      select: false, // Never return password in queries
+      select: false,
     },
     phone: {
       type: String,
       required: [true, 'Phone number is required'],
       unique: true,
       validate: {
-        validator: (phone) => phoneRegex.test(phone),
+        validator: validator.phoneRegex,
         message: 'Please provide a valid phone number',
       },
     },
@@ -52,7 +60,10 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['user', 'admin', 'driver'],
+      enum: {
+        values: USER_ROLES,
+        message: `Role must be one of: ${USER_ROLES.join(', ')}`,
+      },
       default: 'user',
     },
     valid: {
@@ -61,26 +72,45 @@ const userSchema = new mongoose.Schema(
     },
   },
   {
-    timestamps: true, // Auto-manage createdAt/updatedAt
+    timestamps: true,
+    toJSON: { virtuals: true }, // For proper JSON output
+    toObject: { virtuals: true },
   }
 );
 
+/* ====================== */
+/*      MODEL METHODS     */
+/* ====================== */
 
-// Password hashing middleware (hash before save)
+// Password hashing
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
-  this.password = await bcrypt.hash(this.password, 12);
-  next();
+
+  try {
+    this.password = await bcrypt.hash(this.password, BCRYPT_SALT_ROUNDS);
+    next();
+  } catch (err) {
+    next(err);
+  }
 });
 
-// Instance method for password comparison
+// Password comparison
 userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Static method for finding by email
+// Find by email (including password)
 userSchema.statics.findByEmail = function (email) {
   return this.findOne({ email }).select('+password');
+};
+
+/* ====================== */
+/*     QUERY HELPERS      */
+/* ====================== */
+
+// Example helper (add as needed)
+userSchema.query.byRole = function (role) {
+  return this.where({ role });
 };
 
 module.exports = mongoose.model('User', userSchema);

@@ -21,6 +21,7 @@ class NearestDriver {
             )
             .toFixed(2)
         );
+
         return { driver, distance };
       })
       .filter(({ distance }) => distance <= this.maxDis)

@@ -4,6 +4,7 @@ class DriverSelection {
     let selectedDriver = null;
 
     closestDriverBookings.forEach((driver) => {
+      console.log('driverId ', driver.driver_id);
       if (driver.bookingCount < minBookingCount) {
         minBookingCount = driver.bookingCount;
         selectedDriver = driver;

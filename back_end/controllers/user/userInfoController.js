@@ -1,12 +1,28 @@
-exports.UserInfo = (req, res) => {
-  try {
-    user = req.user;
-    if (!user) {
-      return res.status(401).json({ message: 'User not authenticated' });
-    }
-    return res.status(200).json({ data: user, message: 'success!' });
-  } catch (error) {
-    console.log(`error: ${error.message}`);
-    return res.status(500).json({ message: `error occured${error.message}` });
+const User = require('../../Models/User');
+const catchAsync = require('../../utils/catchAsync');
+const ResponseHandler = require('../../utils/responseHandler');
+
+const UserInfo = catchAsync(async (req, res, next) => {
+  user = req.user;
+  if (!user) {
+    return ResponseHandler.sendError(next, {
+      statusCode: 401,
+      message: 'user not authonticated',
+    });
   }
-};
+  const user_data = await User.findOne({ _id: req.user._id }).lean();
+  if (!user_data) {
+    return ResponseHandler.sendError(next, {
+      statusCode: 404,
+      message: 'not found user',
+    });
+  }
+
+  return ResponseHandler.sendSuccess(res, {
+    statusCode: 200,
+    message: 'success!',
+    data: user_data,
+  });
+});
+
+module.exports = UserInfo;
