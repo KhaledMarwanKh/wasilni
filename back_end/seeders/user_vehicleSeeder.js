@@ -14,6 +14,9 @@ const seedUser_vehicles = async (cities, users, vehicles) => {
       license_plate: 'ABC123',
       year: 2020,
       capacity: 4,
+      work_period_start: '08:00',
+      work_period_end: '17:00',
+      valid: true,
     },
     {
       vehicle_id: new mongoose.Types.ObjectId(vehicles[0]._id.toString()),
@@ -27,6 +30,9 @@ const seedUser_vehicles = async (cities, users, vehicles) => {
       license_plate: 'XYZ789',
       year: 2019,
       capacity: 4,
+      work_period_start: '09:00',
+      work_period_end: '18:00',
+      valid: true,
     },
   ];
 

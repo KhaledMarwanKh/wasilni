@@ -9,6 +9,9 @@ const City = require('../../Models/City');
 const UserVehicleDistanceLimit = require('../../Models/UserVehicleDistanceLimit');
 const catchAsync = require('../../utils/catchAsync');
 const ResponseHandler = require('../../utils/responseHandler');
+const {
+  notifyDriver,
+} = require("../../services/Driver'sOrderNotificationService");
 
 const createBooking = catchAsync(async (req, res, next) => {
   if (!req.body) {
@@ -124,8 +127,6 @@ const createBooking = catchAsync(async (req, res, next) => {
     });
   }
 
-  
-
   // create new booking
   const booking = new Booking({
     normal_user_id: req.user._id,
@@ -142,7 +143,10 @@ const createBooking = catchAsync(async (req, res, next) => {
   });
 
   await booking.save();
-  
+
+  // send notification to driver in real time
+  notifyDriver(booking, city_name, vehicle_type);
+
   return ResponseHandler.sendSuccess(res, {
     statusCode: 200,
     message: 'the booking is Done',
