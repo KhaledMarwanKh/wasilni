@@ -10,7 +10,6 @@ const seedUsers = async (roles) => {
       phone: '+12345678910',
       national_num: '12345678901',
       role: 'driver', // Driver role
-      valid: true,
     },
     {
       name: 'Driver Two',
@@ -19,7 +18,6 @@ const seedUsers = async (roles) => {
       phone: '+12345678911',
       national_num: '12345678902',
       role: 'driver', // Driver role
-      valid: true,
     },
     {
       name: 'user one',
@@ -28,7 +26,6 @@ const seedUsers = async (roles) => {
       phone: '+12345678912',
       national_num: '00',
       role: 'user', // normal role
-      valid: true,
     },
     {
       name: 'admin one',
@@ -37,7 +34,6 @@ const seedUsers = async (roles) => {
       phone: '+74852',
       national_num: '00',
       role: 'admin', // admin role
-      valid: true,
     },
   ];
   try {

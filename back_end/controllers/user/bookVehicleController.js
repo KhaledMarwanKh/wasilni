@@ -9,6 +9,7 @@ const City = require('../../Models/City');
 const UserVehicleDistanceLimit = require('../../Models/UserVehicleDistanceLimit');
 const catchAsync = require('../../utils/catchAsync');
 const ResponseHandler = require('../../utils/responseHandler');
+const { changeValidValue } = require('../../services/ChangeValidValueService');
 const {
   notifyDriver,
 } = require("../../services/Driver'sOrderNotificationService");
@@ -47,6 +48,7 @@ const createBooking = catchAsync(async (req, res, next) => {
     { units: 'kilometers' }
   );
 
+  //get vehicle
   const temp = new VehicleService();
   const vehicle = await temp.getVehicle(vehicle_type);
   if (!vehicle) {
@@ -55,13 +57,16 @@ const createBooking = catchAsync(async (req, res, next) => {
       message: `not found this type : ${vehicle_type} in ${city_name}`,
     });
   }
-  const temp1 = new VehicleCostCalculator(distanceKm, vehicle);
 
+  // city
   const city_data = await City.findOne({ name: city_name }, { _id: 1 });
+
   // get cost of tirp
+  const temp1 = new VehicleCostCalculator(distanceKm, vehicle);
   const cost = await temp1.calculateTripCost();
-  const temp2 = new DriverServices(city_data._id, vehicle._id);
+
   // get ids and locations of availble drivers
+  const temp2 = new DriverServices(city_data._id, vehicle._id);
   const availableDrivers = await temp2.getAvailableDrivers();
 
   if (availableDrivers.length === 0) {
@@ -71,25 +76,21 @@ const createBooking = catchAsync(async (req, res, next) => {
     });
   }
 
+  // get limit distance
   const Limit_distance = await UserVehicleDistanceLimit.findOne({
     city_id: city_data._id,
     vehicle_id: vehicle._id,
   });
-
   const maxDistanceBetweenUserAndDriver = Limit_distance.accept_distance;
 
+  // get nearest driver according limit distance
+  // to get closest drivers from start_location
+  // where distance between them under specific number
   const temp3 = new NearestDriver(
     start_location,
     availableDrivers,
     maxDistanceBetweenUserAndDriver
   );
-
-  //choosing driver according:
-  // 1- the distacne between the user_vehicle (driver) and start_location less than 2km
-  // 2- then choose less one has orders last 10 days
-
-  // to get closest drivers from start_location
-  // where distance between them under specific number
   closestDrivers = temp3.closesetDriversOnStart();
   if (closestDrivers.length === 0) {
     return ResponseHandler.sendError(next, {
@@ -102,12 +103,12 @@ const createBooking = catchAsync(async (req, res, next) => {
     return e.driver_id;
   });
 
+  // get bookings of closest driver
   const closestDriverBookings = await temp2.getBookings(closestIds);
 
   let result;
   // there is no bookings , so get nearest driver
   if (closestDriverBookings.length === 0) {
-    console.log('hree');
     const temp5 = new NearestDriver(
       start_location,
       closestDrivers,
@@ -127,6 +128,9 @@ const createBooking = catchAsync(async (req, res, next) => {
     });
   }
 
+  // =======================================
+  // === should apply this part togather ===
+  // =======================================
   // create new booking
   const booking = new Booking({
     normal_user_id: req.user._id,
@@ -144,6 +148,8 @@ const createBooking = catchAsync(async (req, res, next) => {
 
   await booking.save();
 
+  // change valid value to 0
+  changeValidValue(booking.driver_user_id, 0);
   // send notification to driver in real time
   notifyDriver(booking, city_name, vehicle_type);
 

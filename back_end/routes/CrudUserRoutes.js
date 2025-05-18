@@ -5,7 +5,6 @@ const getUser = require('../controllers/admin/getUser.js');
 const deleteUser = require('../controllers/admin/deleteUser.js');
 const updateUser = require('../controllers/admin/updateUser.js');
 const authMiddleware = require('../middleware/authMiddleware.js');
-const app = require('../app.js');
 const checkRole = require('../middleware/checkRoleMiddleware.js');
 
 // middlewares

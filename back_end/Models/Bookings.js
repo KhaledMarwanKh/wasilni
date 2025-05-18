@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 const { pointSchema } = require('./GeoPoint');
+const { isValidBookingStatus } = require('../services/Validators');
+
 const bookingSchema = new mongoose.Schema({
   normal_user_id: {
     type: mongoose.Schema.Types.ObjectId,
@@ -42,6 +44,16 @@ const bookingSchema = new mongoose.Schema({
   },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
+});
+
+bookingSchema.pre('save', function (next) {
+  if (!isValidBookingStatus(this.status)) {
+    return ResponseHandler.sendError(next, {
+      statusCode: 422,
+      message: 'Status must be [pending, accepted, completed, cancelled] ',
+    });
+  }
+  next();
 });
 
 bookingSchema.index({ 'start_location.coordinates': '2dsphere' });

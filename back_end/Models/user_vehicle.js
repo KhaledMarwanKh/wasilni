@@ -5,6 +5,7 @@ const {
   validateTimeFormat,
   validateWorkPeriod,
 } = require('../services/Validators');
+const ResponseHandler = require('../utils/responseHandler');
 
 const user_vehicleSchema = new mongoose.Schema({
   vehicle_id: {
@@ -52,7 +53,10 @@ const user_vehicleSchema = new mongoose.Schema({
 user_vehicleSchema.pre('save', function (next) {
   if (this.work_period_start && this.work_period_end) {
     if (!validateWorkPeriod(this.work_period_start, this.work_period_end)) {
-      throw new Error('Work period end time must be after start time');
+      return ResponseHandler.sendError(next, {
+        statusCode: 422,
+        message: 'Work period end time must be after start time',
+      });
     }
   }
   next();
